@@ -12,17 +12,16 @@ class UserController extends Controller
         return response()->json(['php_version' => $phpVersion]);
     }
 
-
     public function getClientInfo(Request $request)
     {
         $ip = $request -> ip();
-        $useragent = $request->header('User-Agent');
-        return response()->json(['ip' => $ip, 'useragent' => $useragent]);
+        $userAgent = $request->header('User-Agent');
+        return response()->json(['ip' => $ip, 'useragent' => $userAgent]);
     }
 
     public function getDatabaseInfo()
     {
         $databaseInfo = config('database.connections.' . config('database.default'));
-        return response()->json(['database_info' => $databaseInfo]);
+        return response()->json(['database_info' => $databaseInfo], status:200);
     }
 }
