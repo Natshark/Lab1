@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\DTO\UserResource;
+use App\DTO\UserDTO;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Models\User;
@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\PersonalAccessToken;
 
-class UserController extends Controller
+class appController extends Controller
 {
     public function login(LoginRequest $request)
     {
@@ -28,7 +28,7 @@ class UserController extends Controller
 
             if ($activeTokensCount < $maxActiveTokens)
             {
-                $token = $user->createToken($loginDTO->username . '_token', [], now()
+                $token = $user->createToken($loginDTO->username . '_token', ['*'], now()
                     ->addMinutes(env('SANCTUM_TOKEN_EXPIRATION')))->plainTextToken;
                 return response()->json(['token' => $token], 200);
             }
@@ -58,7 +58,7 @@ class UserController extends Controller
     public function getUser(): JsonResponse
     {
         $user = Auth::user();
-        $user = new UserResource(['username' => $user->username, 'email' => $user->email,
+        $user = new UserDTO(['username' => $user->username, 'email' => $user->email,
             'password' => $user->password, 'birthday' => $user->birthday]);
         return response()->json(['Пользователь' => $user]);
     }

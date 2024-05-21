@@ -2,7 +2,7 @@
 
 namespace App\DTO;
 
-class LoginResource
+class LoginDTO
 {
     public $username;
     public $password;

@@ -3,7 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use App\DTO\LoginResource;
+use App\DTO\LoginDTO;
 
 class LoginRequest extends FormRequest
 {
@@ -22,7 +22,7 @@ class LoginRequest extends FormRequest
 
     public function toDTO()
     {
-        return new LoginResource([
+        return new LoginDTO([
             'username' => $this->input('username'),
             'password' => $this->input('password'),
         ]);

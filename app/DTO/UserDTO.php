@@ -2,7 +2,7 @@
 
 namespace App\DTO;
 
-class UserResource
+class UserDTO
 {
     public $username;
     public $email;

@@ -3,7 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use App\DTO\RegisterResource;
+use App\DTO\RegisterDTO;
 
 class RegisterRequest extends FormRequest
 {
@@ -25,7 +25,7 @@ class RegisterRequest extends FormRequest
 
     public function toDTO()
     {
-        return new RegisterResource([
+        return new RegisterDTO([
             'username' => $this->input('username'),
             'email' => $this->input('email'),
             'password' => $this->input('password'),

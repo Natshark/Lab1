@@ -2,18 +2,15 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\UserController;
+use App\Http\Controllers\appController;
 
 Route::prefix('auth')->group(function () {
-    Route::post('/login', [UserController::class, 'login'])->name('login');
-    Route::middleware('guest:sanctum')->post('/register', [UserController::class, 'register']);
+    Route::post('/login', [appController::class, 'login'])->name('login');
+    Route::middleware('guest:sanctum')->post('/register', [appController::class, 'register']);
     Route::middleware('auth:sanctum')->group(function () {
-        Route::get('/me', [UserController::class, 'getUser'])->name('me');
-        Route::post('/out', [UserController::class, 'logout']);
-        Route::get('/tokens', [UserController::class, 'getTokens']);
-        Route::post('/out_all', [UserController::class, 'logoutAll']);
+        Route::get('/me', [appController::class, 'getUser'])->name('me');
+        Route::post('/out', [appController::class, 'logout']);
+        Route::get('/tokens', [appController::class, 'getTokens']);
+        Route::post('/out_all', [appController::class, 'logoutAll']);
     });
-});
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
 });
