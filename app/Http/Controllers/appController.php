@@ -24,7 +24,7 @@ class appController extends Controller
             $user = Auth::user();
 
             $activeTokensCount = $user->tokens()->count();
-            $maxActiveTokens = env('MAX_ACTIVE_TOKENS_PER_USER');
+            $maxActiveTokens = env('MAX_ACTIVE_TOKENS_PER_USER', 3);
 
             if ($activeTokensCount < $maxActiveTokens)
             {
@@ -89,7 +89,7 @@ class appController extends Controller
         return response()->json(['message' => 'Все ваши токены отозваны'], 200);
     }
 
-    public function deleteExpiredTokens()
+    private function deleteExpiredTokens()
     {
         PersonalAccessToken::where('expires_at', '<', now())->delete();
     }
