@@ -5,14 +5,16 @@ namespace App\Http\Controllers;
 use App\DTO\UserDTO;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
+use App\Models\Role;
 use App\Models\User;
+use App\Models\UsersAndRoles;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\PersonalAccessToken;
 
-class appController extends Controller
+class AuthController extends Controller
 {
     public function login(LoginRequest $request)
     {
@@ -51,15 +53,20 @@ class appController extends Controller
         ]);
 
         $user->save();
+        $userAndRole = new UsersAndRoles();
+        $userAndRole->user_id = $user->id;
+        $userAndRole->role_id = Role::where('cipher', 'GUEST')->value('id');
+        $userAndRole->created_by = $user->id;
+        $userAndRole->save();
 
-        return response()->json(['Экземпляр ресурса созданного пользователя' => $user], 201);
+        return response()->json(['Экземпляр ресурса созданного пользователя' => UserDTO::fromModelToDTO($user)], 201);
     }
 
     public function getUser(): JsonResponse
     {
         $user = Auth::user();
         $user = new UserDTO(['username' => $user->username, 'email' => $user->email,
-            'password' => $user->password, 'birthday' => $user->birthday]);
+            'password' => $user->password, 'birthday' => $user->birthday, 'roles' => $user->roles()->roles]);
         return response()->json(['Пользователь' => $user]);
     }
 
