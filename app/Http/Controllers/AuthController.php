@@ -8,92 +8,114 @@ use App\Http\Requests\RegisterRequest;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\UsersAndRoles;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\PersonalAccessToken;
 
+use Illuminate\Support\Facades\DB;
+
 class AuthController extends Controller
 {
     public function login(LoginRequest $request)
     {
-        $this->deleteExpiredTokens();
-        $loginDTO = $request->toDTO();
+        DB::beginTransaction();
 
-        if (Auth::attempt(['username' => $loginDTO->username, 'password' => $loginDTO->password]))
-        {
-            $user = Auth::user();
+        try {
+            $this->deleteExpiredTokens();
+            $loginDTO = $request->toDTO();
 
-            $activeTokensCount = $user->tokens()->count();
-            $maxActiveTokens = env('MAX_ACTIVE_TOKENS_PER_USER', 3);
+            if (Auth::attempt(['username' => $loginDTO->username, 'password' => $loginDTO->password])) {
+                $user = Auth::user();
 
-            if ($activeTokensCount < $maxActiveTokens)
-            {
-                $token = $user->createToken($loginDTO->username . '_token', ['*'], now()
-                    ->addMinutes(env('SANCTUM_TOKEN_EXPIRATION')))->plainTextToken;
-                return response()->json(['token' => $token], 200);
+                $activeTokensCount = $user->tokens()->count();
+                $maxActiveTokens = env('MAX_ACTIVE_TOKENS_PER_USER', 3);
+
+                if ($activeTokensCount < $maxActiveTokens) {
+                    $token = $user->createToken($loginDTO->username . '_token', ['*'], now()
+                        ->addMinutes(env('SANCTUM_TOKEN_EXPIRATION')))->plainTextToken;
+                    DB::commit();
+                    return response()->json(['token' => $token], 200);
+                }
+
+                DB::rollback();
+                return response()->json(['error' => 'Превышено максимальное количество активных токенов']);
             }
 
-            return response()->json(['error' => 'Превышено максимальное количество активных токенов']);
+            DB::rollback();
+            return response()->json(['error' => 'Неверный логин или пароль']);
+        } catch (Exception $e) {
+            DB::rollback();
+            return response()->json(['error' => 'Ошибка аутентификации'], 500);
         }
-
-        return response()->json(['error' => 'Неверный логин или пароль']);
     }
 
     public function register(RegisterRequest $request): JsonResponse
     {
-        $registerDTO = $request->toDTO();
+        DB::beginTransaction();
 
-        $user = new User([
-            'username' => $registerDTO->username,
-            'email' => $registerDTO->email,
-            'password' => $registerDTO->password,
-            'birthday' => $registerDTO->birthday,
-        ]);
+        try {
+            $registerDTO = $request->toDTO();
 
-        $user->save();
-        $userAndRole = new UsersAndRoles();
-        $userAndRole->user_id = $user->id;
-        $userAndRole->role_id = Role::where('cipher', 'GUEST')->value('id');
-        $userAndRole->created_by = $user->id;
-        $userAndRole->save();
+            $user = new User([
+                'username' => $registerDTO->username,
+                'email' => $registerDTO->email,
+                'password' => $registerDTO->password,
+                'birthday' => $registerDTO->birthday,
+            ]);
 
-        return response()->json(['Экземпляр ресурса созданного пользователя' => UserDTO::fromModelToDTO($user)], 201);
-    }
+            $user->save();
+            $userAndRole = new UsersAndRoles();
+            $userAndRole->user_id = $user->id;
+            $userAndRole->role_id = Role::where('cipher', 'GUEST')->value('id');
+            $userAndRole->created_by = $user->id;
+            $userAndRole->save();
 
-    public function getUser(): JsonResponse
-    {
-        $user = Auth::user();
-        $user = new UserDTO(['username' => $user->username, 'email' => $user->email,
-            'password' => $user->password, 'birthday' => $user->birthday, 'roles' => $user->roles()->roles]);
-        return response()->json(['Пользователь' => $user]);
+            DB::commit();
+            return response()->json(['Экземпляр ресурса созданного пользователя' => UserDTO::fromModelToDTO($user)], 201);
+        } catch (Exception $e) {
+            DB::rollback();
+            return response()->json(['error' => 'Ошибка регистрации пользователя'], 500);
+        }
     }
 
     public function logout()
     {
-        $user = Auth::user();
+        DB::beginTransaction();
 
-        if ($user)
-        {
-            $user->currentAccessToken()->delete();
+        try {
+            $user = Auth::user();
 
-            return response()->json(['message' => 'Вы успешно разлогинились']);
+            if ($user) {
+                $user->currentAccessToken()->delete();
+
+                DB::commit();
+                return response()->json(['message' => 'Вы успешно разлогинились']);
+            }
+
+            DB::rollback();
+            return response()->json(['error' => 'Вы не авторизованы']);
+        } catch (Exception $e) {
+            DB::rollback();
+            return response()->json(['error' => 'Ошибка выхода из системы'], 500);
         }
-
-        return response()->json(['error' => 'Вы не авторизованы']);
-    }
-
-    public function getTokens()
-    {
-        $this->deleteExpiredTokens();
-        return response()->json(['tokens' => Auth::user()->tokens->pluck('token')]);
     }
 
     public function logoutAll()
     {
-        Auth::user()->tokens()->delete();
-        return response()->json(['message' => 'Все ваши токены отозваны'], 200);
+        DB::beginTransaction();
+
+        try {
+            Auth::user()->tokens()->delete();
+
+            DB::commit();
+            return response()->json(['message' => 'Все ваши токены отозваны'], 200);
+        } catch (Exception $e) {
+            DB::rollback();
+            return response()->json(['error' => 'Ошибка выхода из всех сеансов'], 500);
+        }
     }
 
     private function deleteExpiredTokens()
@@ -101,3 +123,4 @@ class AuthController extends Controller
         PersonalAccessToken::where('expires_at', '<', now())->delete();
     }
 }
+

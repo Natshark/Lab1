@@ -66,6 +66,8 @@ class CheckPermissions
             'hardDelete' => 'delete',
             'softDelete' => 'delete',
             'restore' => 'restore',
+            'story' => 'get-story',
+            'change' => 'change',
         ];
 
         return $map[$method] ?? null;
