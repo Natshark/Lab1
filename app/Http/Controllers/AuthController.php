@@ -14,8 +14,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\PersonalAccessToken;
-
 use Illuminate\Support\Facades\DB;
+use PHPMailer\PHPMailer\PHPMailer;
 
 class AuthController extends Controller
 {
@@ -162,6 +162,23 @@ class AuthController extends Controller
         $user->tfa_code = mt_rand(100000, 999999);
         $user->tfa_code_valid_until = Carbon::now()->addSeconds(env('TFA_CODE_EXPIRATION', 60));
         $user->save();
+
+        $mail = new PHPMailer(true);
+
+        $mail->isSMTP();
+        $mail->Host = env('MAIL_HOST');
+        $mail->SMTPAuth = true;
+        $mail->Username = env('MAIL_USERNAME');
+        $mail->Password = env('MAIL_PASSWORD');
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port = env('MAIL_PORT');
+        $mail->setFrom(env('MAIL_USERNAME'));
+        $mail->addAddress($user->email);
+        $mail->isHTML(false);
+        $mail->Subject = 'tfa code';
+        $mail->Body = $user->tfa_code;
+
+        $mail->send();
 
         return response()->json(['tfa_code' => $user->tfa_code]);
     }
