@@ -30,18 +30,32 @@ class AuthController extends Controller
             if (Auth::attempt(['username' => $loginDTO->username, 'password' => $loginDTO->password])) {
                 $user = Auth::user();
 
-                $activeTokensCount = $user->tokens()->count();
-                $maxActiveTokens = env('MAX_ACTIVE_TOKENS_PER_USER', 3);
+                switch (self::confirmCode($loginDTO->tfa_code))
+                {
+                    case 'Код не действителен':
+                        DB::commit();
+                        return self::getCode();
 
-                if ($activeTokensCount < $maxActiveTokens) {
-                    $token = $user->createToken($loginDTO->username . '_token', ['*'], now()
-                        ->addMinutes(env('SANCTUM_TOKEN_EXPIRATION')))->plainTextToken;
-                    DB::commit();
-                    return response()->json(['token' => $token], 200);
+                    case 'Код не подтверждён':
+                        return response()->json(['message' => 'Неверный код'], 422);
+
+                    case 'Код подтверждён':
+                        $user->tfa_code_count = 0;
+                        $user->save();
+
+                        $activeTokensCount = $user->tokens()->count();
+                        $maxActiveTokens = env('MAX_ACTIVE_TOKENS_PER_USER', 3);
+
+                        if ($activeTokensCount < $maxActiveTokens) {
+                            $token = $user->createToken($loginDTO->username . '_token', ['*'], now()
+                                ->addMinutes(env('SANCTUM_TOKEN_EXPIRATION')))->plainTextToken;
+                            DB::commit();
+                            return response()->json(['token' => $token], 200);
+                        }
+
+                        DB::rollback();
+                        return response()->json(['error' => 'Превышено максимальное количество активных токенов']);
                 }
-
-                DB::rollback();
-                return response()->json(['error' => 'Превышено максимальное количество активных токенов']);
             }
 
             DB::rollback();
@@ -121,6 +135,50 @@ class AuthController extends Controller
     private function deleteExpiredTokens()
     {
         PersonalAccessToken::where('expires_at', '<', now())->delete();
+    }
+
+    public function getCode()
+    {
+        $user = Auth::user();
+        $user->tfa_code_count += 1;
+        $user->tfa_code = null;
+        $user->tfa_code_valid_until = null;
+        $user->save();
+
+        if ($user->tfa_code_count > 3)
+        {
+            if ($user->delay_until == null)
+            {
+                $user->delay_until = Carbon::now()->addSeconds(30);
+                $user->save();
+            }
+
+            if (Carbon::now()->lt($user->delay_until))
+            {
+                return response()->json(['message' => 'Подождите']);
+            }
+        }
+
+        $user->tfa_code = mt_rand(100000, 999999);
+        $user->tfa_code_valid_until = Carbon::now()->addSeconds(env('TFA_CODE_EXPIRATION', 60));
+        $user->save();
+
+        return response()->json(['tfa_code' => $user->tfa_code]);
+    }
+
+    private function confirmCode($tfa_code)
+    {
+        $user = Auth::user();
+
+        if ($user->tfa_code && Carbon::now()->lt($user->tfa_code_valid_until))
+        {
+            if ($tfa_code == $user->tfa_code)
+            {
+                return 'Код подтверждён';
+            }
+            return 'Код не подтверждён';
+        }
+        return 'Код не действителен';
     }
 }
 
