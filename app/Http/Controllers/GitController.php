@@ -20,8 +20,8 @@ class GitController extends Controller
                 {
                     Log::info('Дата: ' . now() . ' IP:' . $request->ip());
 
-                    $this->runGitCommand(['git', 'checkout', 'main'], 'Переключение на главную ветку проетка в git');
                     $this->runGitCommand(['git', 'reset', '--hard'], 'Отмена всех изменений, в случае если они присутствовали');
+                    $this->runGitCommand(['git', 'checkout', 'main'], 'Переключение на главную ветку проетка в git');
                     $this->runGitCommand(['git', 'pull', 'origin', 'main'], 'Обновление проекта с гита до последней актуальной версии');
 
                     return response()->json('Все действия выполнены успешно', 200);
