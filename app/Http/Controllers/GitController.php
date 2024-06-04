@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Process\Exception\ProcessFailedException;
@@ -14,7 +15,8 @@ class GitController extends Controller
     {
         if ($request->input('secret_key') === env('SECRET_KEY'))
         {
-            if (Cache::lock('git-update-lock', 300)->get())
+            $lock = Cache::lock('git-update-lock', 300);
+            if ($lock->get())
             {
                 try
                 {
@@ -26,13 +28,13 @@ class GitController extends Controller
 
                     return response()->json('Все действия выполнены успешно', 200);
                 }
-                catch (ProcessFailedException $e)
+                catch (Exception $e)
                 {
                     return response()->json($e->getMessage(), 500);
                 }
                 finally
                 {
-                    Cache::lock('git-update-lock')->release();
+                    $lock->release();
                 }
             }
             else
