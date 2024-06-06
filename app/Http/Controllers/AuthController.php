@@ -95,6 +95,19 @@ class AuthController extends Controller
         }
     }
 
+    public function getUser(): JsonResponse
+    {
+        $user = Auth::user();
+        $user = new UserDTO(['username' => $user->username, 'email' => $user->email,
+            'password' => $user->password, 'birthday' => $user->birthday, 'roles' => $user->roles()->roles]);
+        return response()->json(['Пользователь' => $user]);
+    }
+    
+    public function getTokens()
+    {
+        $this->deleteExpiredTokens();
+        return response()->json(['tokens' => Auth::user()->tokens->pluck('token')]);
+    }
     public function logout()
     {
         DB::beginTransaction();
