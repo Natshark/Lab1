@@ -102,7 +102,7 @@ class AuthController extends Controller
             'password' => $user->password, 'birthday' => $user->birthday, 'roles' => $user->roles()->roles]);
         return response()->json(['Пользователь' => $user]);
     }
-    
+
     public function getTokens()
     {
         $this->deleteExpiredTokens();

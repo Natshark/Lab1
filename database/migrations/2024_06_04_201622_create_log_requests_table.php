@@ -16,7 +16,7 @@ class CreateLogRequestsTable extends Migration
             $table->string('controller_method')->nullable();
             $table->text('request_body')->nullable();
             $table->text('request_headers')->nullable();
-            $table->unsignedBigInteger('user_id')->nullable();
+            $table->integer('user_id')->nullable();
             $table->string('ip')->nullable();
             $table->string('user_agent')->nullable();
             $table->integer('response_status_code');

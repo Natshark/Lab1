@@ -16,7 +16,7 @@ class LogRequestController extends Controller
         {
             foreach ($filters as $filter)
             {
-                if (in_array($filter['key'], ['user_id', 'response_status_code', 'ip', 'user_agent', 'controller_path']))
+                if (in_array($filter['key'], ['user_id', 'response_status_code', 'ip', 'user_agent', 'controller_path', 'http_method']))
                 {
                     $query->where($filter['key'], $filter['value']);
                 }
