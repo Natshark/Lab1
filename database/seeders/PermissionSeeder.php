@@ -29,6 +29,33 @@ class PermissionSeeder extends Seeder
             }
         }
 
+        $permissions[] =
+        [
+            'name' => 'get-list-logRequest',
+            'description' => 'get-list-logRequest',
+            'cipher' => 'get-list-logRequest',
+            'created_at' => Carbon::now(),
+            'created_by' => 1
+        ];
+        $permissions[] =
+        [
+            'name' => 'read-logRequest',
+            'description' => 'read-logRequest',
+            'cipher' => 'read-logRequest',
+            'created_at' => Carbon::now(),
+            'created_by' => 1
+        ];
+        $permissions[] =
+        [
+            'name' => 'delete-logRequest',
+            'description' => 'delete-logRequest',
+            'cipher' => 'delete-logRequest',
+            'created_at' => Carbon::now(),
+            'created_by' => 1
+        ];
+
+
         DB::table('permissions')->insert($permissions);
+
     }
 }

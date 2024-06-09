@@ -51,6 +51,7 @@ class CheckPermissions
             'PermissionController' => 'permission',
             'UserAndRoleController' => 'userAndRole',
             'RoleAndPermissionController' => 'roleAndPermission',
+            'LogRequestController' => 'logRequest',
         ];
 
         return $map[$controller] ?? null;
